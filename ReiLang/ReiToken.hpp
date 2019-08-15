@@ -24,7 +24,7 @@ enum class TokenType
     end
 };
 
-inline const char* to_string(TokenType e)
+inline std::string to_string(TokenType e)
 {
     switch (e) {
     case TokenType::eof :

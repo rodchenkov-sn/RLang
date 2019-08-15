@@ -1,5 +1,5 @@
 #include <iostream>
-#include "ReiParser.hpp"
+#include "ReiInterpreter.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -10,9 +10,9 @@ int main(int argc, char* argv[])
             if (expression.empty()) {
                 break;
             }
-            Parser parser{ expression };
-            parser.parse();
-            std::cout << "Done.\n";
+            Interpreter interpreter{ expression };
+            interpreter.interpret();
+            std::cout << "###\n";
         }
         catch (const std::exception& exc) {
             std::cout << exc.what() << "\n";
