@@ -14,11 +14,25 @@ StateListNode::~StateListNode()
         delete s;
 }
 
-Definition::Definition(AstNode* var, AstNode* exp, Token t):
+DefListNode::DefListNode(const bool isCon):
+    AstNode(AstNodeType::def_list),
+    isConstant(isCon)
+{
+}
+
+DefListNode::~DefListNode()
+{
+    for (auto& d : definitions) {
+        delete d;
+    }
+}
+
+Definition::Definition(AstNode* var, AstNode* exp, Token t, BaseType tp):
     AstNode(AstNodeType::definition),
     variable(var),
     expression(exp),
-    oper(std::move(t))
+    oper(std::move(t)),
+    varType(tp)
 {
 }
 
@@ -68,14 +82,20 @@ UnaryOperator::~UnaryOperator()
     delete operand;
 }
 
-Variable::Variable(std::string n):
+Identifier::Identifier(std::string n):
     AstNode(AstNodeType::variable),
     name(std::move(n))
 {
 }
 
-IntLiteral::IntLiteral(const int v):
+NumLiteral::NumLiteral(const int v):
     AstNode(AstNodeType::int_literal),
-    value(v)
+    data(v)
+{
+}
+
+NumLiteral::NumLiteral(const double v):
+    AstNode(AstNodeType::real_literal),
+    data(v)
 {
 }

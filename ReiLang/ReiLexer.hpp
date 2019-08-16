@@ -9,9 +9,9 @@ public:
     explicit Lexer(std::string expression);
     Token getNextToken();
 private:
-    int read_int_();
+    Token read_num_literal_();
     Token read_id_();
-    char peek_();
+    char peek_(size_t l = 1);
     void skip_whitespaces_();
     void skip_comment_();
     void panic_(std::string msg) const;

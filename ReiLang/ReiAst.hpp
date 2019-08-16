@@ -3,18 +3,20 @@
 
 #include <list>
 #include <string>
-#include <utility>
 #include "ReiToken.hpp"
+#include "ReiBaseTypes.hpp"
 
 enum class AstNodeType
 {
     state_list,
+    def_list,
     definition,
     modification,
     variable,
     binary_operator,
     unary_operator,
     int_literal,
+    real_literal,
     none
 };
 
@@ -36,13 +38,22 @@ struct StateListNode final : AstNode
     std::list<AstNode*> states;
 };
 
+struct DefListNode final : AstNode
+{
+    explicit DefListNode(bool isCon);
+    ~DefListNode();
+    std::list<AstNode*> definitions;
+    bool isConstant;
+};
+
 struct Definition final : AstNode
 {
-    Definition(AstNode* var, AstNode* exp, Token t);
+    Definition(AstNode* var, AstNode* exp, Token t, BaseType tp);
     ~Definition();
     AstNode* variable;
     AstNode* expression;
     Token oper;
+    BaseType varType;
 };
 
 struct Modification final : AstNode
@@ -71,16 +82,17 @@ struct UnaryOperator final : AstNode
     Token oper;
 };
 
-struct Variable final : AstNode
+struct Identifier final : AstNode
 {
-    explicit Variable(std::string n);
+    explicit Identifier(std::string n);
     std::string name;
 };
 
-struct IntLiteral final : AstNode
+struct NumLiteral final : AstNode
 {
-    explicit IntLiteral(int v);
-    int value;
+    explicit NumLiteral(int v);
+    explicit NumLiteral(double v);
+    std::variant<int, double> data;
 };
 
 #endif // REI_AST

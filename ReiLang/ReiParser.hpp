@@ -11,6 +11,7 @@ public:
     AstNode* parse();
 private:
     AstNode* program_rule();
+    AstNode* def_list_rule_();
     AstNode* state_list_rule_();
     AstNode* state_rule_();
     AstNode* definition_rule_();
@@ -18,8 +19,8 @@ private:
     AstNode* expression_rule_();
     AstNode* sum_rule_();
     AstNode* mult_rule_();
-    AstNode* int_rule_();
-    AstNode* var_rule_();
+    AstNode* liter_rule_();
+    AstNode* identifier_rule_();
     void eat_(TokenType type);
     static void panic_(const std::string& msg);
 

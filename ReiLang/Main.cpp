@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
             }
             Interpreter interpreter{ expression };
             interpreter.interpret();
-            std::cout << "###\n";
+            std::cout << "done\n";
         }
         catch (const std::exception& exc) {
             std::cout << exc.what() << "\n";

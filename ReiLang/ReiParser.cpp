@@ -23,6 +23,25 @@ AstNode* Parser::program_rule()
     return stateList;
 }
 
+AstNode* Parser::def_list_rule_()
+{
+    DefListNode* defList = nullptr;
+    if (curr_token_.type == TokenType::def_var) {
+        defList = new DefListNode{ false };
+        eat_(TokenType::def_var);
+    } else {
+        defList = new DefListNode{ true };
+        eat_(TokenType::def_con);
+    }
+    while (curr_token_.type != TokenType::semi) {
+        defList->definitions.push_back(definition_rule_());
+        if (curr_token_.type == TokenType::comma) {
+            eat_(TokenType::comma);
+        }
+    }
+    return defList;
+}
+
 AstNode* Parser::state_list_rule_()
 {
     auto stateList = new StateListNode{};
@@ -43,8 +62,8 @@ AstNode* Parser::state_rule_()
         eat_(TokenType::end);
         return stateList;
     }
-    if (curr_token_.type == TokenType::def_var) {
-        const auto def = definition_rule_();
+    if (curr_token_.type == TokenType::def_var || curr_token_.type == TokenType::def_con) {
+        const auto def = def_list_rule_();
         eat_(TokenType::semi);
         return def;
     }
@@ -55,16 +74,30 @@ AstNode* Parser::state_rule_()
 
 AstNode* Parser::definition_rule_()
 {
-    eat_(TokenType::def_var);
-    const auto var = var_rule_();
-    const Token op = curr_token_;
-    eat_(TokenType::assign);
-    return new Definition{ var, expression_rule_(), op };
+    const auto identifier = identifier_rule_();
+    BaseType type = BaseType::none;
+    if (curr_token_.type == TokenType::lock) {
+        eat_(TokenType::lock);
+        if (curr_token_.type == TokenType::integer) {
+            eat_(TokenType::integer);
+            type = BaseType::integer;
+        } else {
+            eat_(TokenType::real);
+            type = BaseType::real;
+        }
+    }
+    Token oper = { TokenType::none, 0 };
+    if (curr_token_.type == TokenType::assign) {
+        oper = curr_token_;
+        eat_(TokenType::assign);
+        return new Definition{ identifier, expression_rule_(), oper, type };
+    }
+    return new Definition{ identifier, nullptr, oper, type };
 }
 
 AstNode* Parser::modification_rule_()
 {
-    const auto var = var_rule_();
+    const auto var = identifier_rule_();
     const Token op = curr_token_;
     eat_(TokenType::assign);
     return new Modification{ var, expression_rule_(), op };
@@ -94,35 +127,38 @@ AstNode* Parser::sum_rule_()
 
 AstNode* Parser::mult_rule_()
 {
-    auto res = int_rule_();
+    auto res = liter_rule_();
     AstNode* lowerNode = nullptr;
     while (curr_token_.type == TokenType::mul 
         || curr_token_.type == TokenType::div 
-        || curr_token_.type == TokenType::mod) {
+        || curr_token_.type == TokenType::mod
+        || curr_token_.type == TokenType::int_div) {
         const Token op = curr_token_;
         if (op.type == TokenType::mul) {
             eat_(TokenType::mul);
         } else if (op.type == TokenType::div) {
             eat_(TokenType::div);
+        } else if(op.type == TokenType::int_div) {
+            eat_(TokenType::int_div);
         } else {
             eat_(TokenType::mod);
         }
-        lowerNode = new BinaryOperator{ res, int_rule_(), op };
+        lowerNode = new BinaryOperator{ res, liter_rule_(), op };
         res = lowerNode;
     }
     return res;
 }
 
-AstNode* Parser::int_rule_()
+AstNode* Parser::liter_rule_()
 {
     if (curr_token_.type == TokenType::plus) {
         eat_(TokenType::plus);
-        return int_rule_();
+        return liter_rule_();
     }
     if (curr_token_.type == TokenType::minus) {
         Token op = curr_token_;
         eat_(TokenType::minus);
-        return new UnaryOperator{ int_rule_(), op };
+        return new UnaryOperator{ liter_rule_(), op };
     }
     if (curr_token_.type == TokenType::l_par) {
         eat_(TokenType::l_par);
@@ -130,19 +166,24 @@ AstNode* Parser::int_rule_()
         eat_(TokenType::r_par);
         return res;
     }
-    if (curr_token_.type == TokenType::variable) {
-        return var_rule_();
+    if (curr_token_.type == TokenType::identifier) {
+        return identifier_rule_();
+    }
+    if (curr_token_.type == TokenType::int_lit) {
+        const Token intLit = curr_token_;
+        eat_(TokenType::int_lit);
+        return new NumLiteral{ std::get<int>(intLit.data) };
     }
     const Token intLit = curr_token_;
-    eat_(TokenType::integer);
-    return new IntLiteral{ std::get<int>(intLit.data) };
+    eat_(TokenType::real_lit);
+    return new NumLiteral{ std::get<double>(intLit.data) };
 }
 
-AstNode* Parser::var_rule_()
+AstNode* Parser::identifier_rule_()
 {
     const Token var = curr_token_;
-    eat_(TokenType::variable);
-    return new Variable{ std::get<std::string>(var.data) };
+    eat_(TokenType::identifier);
+    return new Identifier{ std::get<std::string>(var.data) };
 }
 
 void Parser::eat_(const TokenType type)

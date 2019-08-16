@@ -7,21 +7,50 @@
 
 enum class TokenType
 {
+    none,
     eof,
+    // eof
     semi,
-    variable,
+    // ;
+    comma,
+    // ,
+    identifier,
+    // x
     assign,
+    // =
     plus,
+    // +
     minus,
+    // -
     mul,
+    // *
     div,
+    // /
+    int_div,
+    // //
     mod,
+    // %
     l_par,
+    // (
     r_par,
+    // )
+    int_lit,
+    // 123
+    real_lit,
+    // 1.23
     integer,
+    // Int
+    real,
+    // Real
     def_var,
+    // var
+    def_con,
+    // con
     begin,
-    end
+    // {
+    end,
+    // }
+    lock // ::
 };
 
 inline std::string to_string(TokenType e)
@@ -30,9 +59,11 @@ inline std::string to_string(TokenType e)
     case TokenType::eof :
         return "eof";
     case TokenType::semi :
-        return "semicolon";
-    case TokenType::variable :
-        return "variable";
+        return "semi";
+    case TokenType::comma :
+        return "comma";
+    case TokenType::identifier :
+        return "identifier";
     case TokenType::assign :
         return "assign";
     case TokenType::plus :
@@ -43,20 +74,32 @@ inline std::string to_string(TokenType e)
         return "mul";
     case TokenType::div :
         return "div";
+    case TokenType::int_div :
+        return "int_div";
     case TokenType::mod :
         return "mod";
     case TokenType::l_par :
         return "l_par";
     case TokenType::r_par :
         return "r_par";
+    case TokenType::int_lit :
+        return "int_lit";
     case TokenType::integer :
         return "integer";
+    case TokenType::real :
+        return "real";
     case TokenType::def_var :
         return "def_var";
+    case TokenType::def_con :
+        return "def_con";
     case TokenType::begin :
         return "begin";
     case TokenType::end :
         return "end";
+    case TokenType::lock :
+        return "lock";
+    case TokenType::real_lit: 
+        return "real_lit";
     default :
         return "unknown";
     }
@@ -65,7 +108,22 @@ inline std::string to_string(TokenType e)
 struct Token
 {
     TokenType type;
-    std::variant<int, std::string> data;
+    std::variant<int, double, std::string> data;
 };
+
+
+inline std::string to_string(Token t)
+{
+    if (t.type == TokenType::identifier) {
+        return "(" + to_string(t.type) + " : " + std::get<std::string>(t.data) + ")";
+    }
+    if (t.type == TokenType::int_lit) {
+        return  "(" + to_string(t.type) + " : " + std::to_string(std::get<int>(t.data)) + ")";
+    }
+    if (t.type == TokenType::real_lit) {
+        return  "(" + to_string(t.type) + " : " + std::to_string(std::get<double>(t.data)) + ")";
+    }
+    return "(" + to_string(t.type) + ")";
+}
 
 #endif // REI_TOKEN

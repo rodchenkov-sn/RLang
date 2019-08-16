@@ -2,7 +2,12 @@
 #include "ReiExcept.hpp"
 #include <map>
 
-std::map<std::string, TokenType> RESERVED_KEYWORDS = { {"var", TokenType::def_var} };
+std::map<std::string, TokenType> RESERVED_KEYWORDS = { 
+    {"var", TokenType::def_var},
+    {"con", TokenType::def_con},
+    {"Int", TokenType::integer},
+    {"Real", TokenType::real}
+};
 
 Lexer::Lexer(std::string expression) :
     expression_(std::move(expression)),
@@ -12,68 +17,94 @@ Lexer::Lexer(std::string expression) :
 
 Token Lexer::getNextToken()
 {
-    skip_whitespaces_();
-    if (pos_ < expression_.length() && expression_[pos_] == '~' && peek_() == '~') {
-        skip_comment_();
-    }
-    if (pos_ >= expression_.length()) {
-        return { TokenType::eof, 0 };
-    }
-    if (std::isdigit(expression_[pos_])) {
-        return { TokenType::integer, {read_int_()} };
-    }
-    if (std::isalpha(expression_[pos_])) {
-        return read_id_();
-    }
-    switch (expression_[pos_]) {
-    case '+':
-        ++pos_;
-        return { TokenType::plus, 0 };
-    case '-':
-        ++pos_;
-        return { TokenType::minus, 0 };
-    case '*':
-        ++pos_;
-        return { TokenType::mul, 0 };
-    case '/':
-        ++pos_;
-        return { TokenType::div, 0 };
-    case '%':
-        ++pos_;
-        return { TokenType::mod, 0 };
-    case '=':
-        ++pos_;
-        return { TokenType::assign, 0 };
-    case '(':
-        ++pos_;
-        return { TokenType::l_par, 0 };
-    case ')':
-        ++pos_;
-        return { TokenType::r_par, 0 };
-    case '_':
-        return read_id_();
-    case ';':
-        ++pos_;
-        return { TokenType::semi, 0 };
-    case '{':
-        ++pos_;
-        return { TokenType::begin, 0 };
-    case '}':
-        ++pos_;
-        return { TokenType::end, 0 };
-    default:
-        panic_("Unknown lexeme");
+    while (true) {
+        if (pos_ < expression_.length() && expression_[pos_] == '~' && peek_() == '~') {
+            pos_ += 2;
+            skip_comment_();
+        }
+        skip_whitespaces_();
+        if (pos_ >= expression_.length()) {
+            return { TokenType::eof, 0 };
+        }
+        if (std::isdigit(expression_[pos_])) {
+            return read_num_literal_();
+        }
+        if (std::isalpha(expression_[pos_])) {
+            return read_id_();
+        }
+        if (expression_[pos_] == ':' && peek_() == ':') {
+            pos_ += 2;
+            return { TokenType::lock , {0} };
+        }
+        switch (expression_[pos_]) {
+        case '+':
+            ++pos_;
+            return { TokenType::plus, 0 };
+        case '-':
+            ++pos_;
+            return { TokenType::minus, 0 };
+        case '*':
+            ++pos_;
+            return { TokenType::mul, 0 };
+        case '/':
+            if (peek_() == '/') {
+                pos_ += 2;
+                return { TokenType::int_div, 0 };
+            }
+            ++pos_;
+            return { TokenType::div, 0 };
+        case '%':
+            ++pos_;
+            return { TokenType::mod, 0 };
+        case '=':
+            ++pos_;
+            return { TokenType::assign, 0 };
+        case '(':
+            ++pos_;
+            return { TokenType::l_par, 0 };
+        case ')':
+            ++pos_;
+            return { TokenType::r_par, 0 };
+        case '_':
+            return read_id_();
+        case ';':
+            ++pos_;
+            return { TokenType::semi, 0 };
+        case '{':
+            ++pos_;
+            return { TokenType::begin, 0 };
+        case '}':
+            ++pos_;
+            return { TokenType::end, 0 };
+        case ',':
+            ++pos_;
+            return { TokenType::comma, 0 };
+        case '~':
+            continue;
+        default:
+            panic_("Unknown lexeme");
+        }
     }
 }
 
-int Lexer::read_int_()
+Token Lexer::read_num_literal_()
 {
-    std::string strInt;
-    while (pos_ < expression_.length() && std::isdigit(expression_[pos_])) {
-        strInt += expression_[pos_];
+    TokenType type = TokenType::int_lit;
+    std::string strLiteral;
+    while (pos_ < expression_.length() && (std::isdigit(expression_[pos_]) || expression_[pos_] == '.')) {
+        if (expression_[pos_] == '.') {
+            if (type == TokenType::real_lit) {
+                panic_("Bad Real literal");
+            }
+            type = TokenType::real_lit;
+        }
+        strLiteral += expression_[pos_];
         ++pos_;
     }
-    return std::stoi(strInt);
+    if (type == TokenType::real_lit) {
+        return { type, std::stod(strLiteral) };
+    }
+    return { type, std::stoi(strLiteral) };
 }
 
 Token Lexer::read_id_()
@@ -87,14 +118,14 @@ Token Lexer::read_id_()
     if (RESERVED_KEYWORDS.find(id) != RESERVED_KEYWORDS.end()) {
         return { RESERVED_KEYWORDS[id], 0 };
     }
-    return { TokenType::variable, {id} };
+    return { TokenType::identifier, {id} };
 
 }
 
-char Lexer::peek_()
+char Lexer::peek_(size_t l)
 {
-    if (pos_ + 1 < expression_.length()) {
-        return expression_[pos_ + 1];
+    if (pos_ + l < expression_.length()) {
+        return expression_[pos_ + l];
     }
     return '\0';
 }
@@ -108,10 +139,19 @@ void Lexer::skip_whitespaces_()
 
 void Lexer::skip_comment_()
 {
-    while (pos_ < expression_.length() && expression_[pos_] != '\n') {
-        ++pos_;
+    if (pos_ < expression_.length() && expression_[pos_] == '[') {
+        while (pos_ < expression_.length()) {
+            if (expression_[pos_] == ']' && peek_() == '~' && peek_(2) == '~') {
+                break;
+            }
+            ++pos_;
+        }
+        pos_ += 3;
+    } else {
+        while (pos_ < expression_.length() && expression_[pos_] != '\n') {
+            ++pos_;
+        }
     }
-    ++pos_;
 }
 
 void Lexer::panic_(std::string msg) const

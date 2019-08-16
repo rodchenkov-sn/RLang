@@ -126,6 +126,7 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ReiAst.cpp" />
+    <ClCompile Include="ReiBaseTypes.cpp" />
     <ClCompile Include="ReiExcept.cpp" />
     <ClCompile Include="ReiInterpreter.cpp" />
     <ClCompile Include="ReiLexer.cpp" />
@@ -133,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ReiAst.hpp" />
+    <ClInclude Include="ReiBaseTypes.hpp" />
     <ClInclude Include="ReiExcept.hpp" />
     <ClInclude Include="ReiInterpreter.hpp" />
     <ClInclude Include="ReiLexer.hpp" />
